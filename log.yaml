@@ -1,0 +1,27 @@
+version: 1
+formatters:
+  simple:
+    format: '%(asctime)s [%(levelname)s] <%(filename)s> --- %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+    stream: ext://sys.stdout
+  file:
+    class: logging.FileHandler
+    formatter: simple
+    filename: logs/ai.log
+    encoding: utf8
+    mode: w
+loggers:
+  debug:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: no
+  info:
+    level: INFO
+    handlers: [console, file]
+    propagate: no
+root:
+  level: ERROR
+  handlers: [console, file]
