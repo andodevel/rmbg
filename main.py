@@ -4,6 +4,10 @@ from bootstrap import do_bootstrap
 from helpers import *
 from libs.deeplabv3p.model import Deeplabv3
 from debug import *
+from config import get_logger
+from PIL import Image
+
+logger = get_logger()
 
 def generate_renditions(image_org_):
     image_ = resize_image(image_org_, width=512)
@@ -29,7 +33,6 @@ def iterate(file_path):
     # canny_rate = assess_canny(image, image_gray)
     # logger.info(f"Canny rate: {canny_rate}")
 
-    from PIL import Image
     trained_image_width = 512
     mean_subtraction_value = 127.5
 
@@ -50,7 +53,7 @@ def iterate(file_path):
     # Generates labels using most basic setup.  Supports various image sizes.  Returns image labels in same format
     # as original image.  Normalization matches MobileNetV2
     # make prediction
-    deeplab_model = Deeplabv3()
+    deeplab_model = Deeplabv3(backbone="xception")
     res = deeplab_model.predict(np.expand_dims(resized_image, 0))
     labels = np.argmax(res.squeeze(), -1)
 
@@ -60,8 +63,11 @@ def iterate(file_path):
     if pad_y > 0:
         labels = labels[:, :-pad_y]
     labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
+    labels = np.expand_dims(labels, -1)
+    # Apply labels mask to the image
+    splashed_image = apply_image_mask(labels, image, image_gray)
 
-    display_single_image(labels)
+    display_single_image(splashed_image)
 
 
 if __name__ == "__main__":
