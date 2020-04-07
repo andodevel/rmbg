@@ -64,9 +64,15 @@ def iterate(file_path):
     if pad_y > 0:
         labels = labels[:, :-pad_y]
     labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
+
+    # Remove noise and expand neighbors. TODO: use opencvs
+    from scipy import ndimage
+    labels = ndimage.binary_erosion(labels, structure=np.ones((15, 15))).astype(labels.dtype)
+    labels = ndimage.binary_dilation(labels, structure=np.ones((20, 20))).astype(labels.dtype)
+
     labels = np.expand_dims(labels, -1)
     # Apply labels mask to the image
-    image_splashed = apply_image_mask(labels, image, image_gray)
+    image_splashed = apply_image_mask(labels, image, [0,0,0])
 
     # Apply labels mask to canny filtered image
     image_canny = canny.apply(image, image_gray)

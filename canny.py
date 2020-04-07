@@ -1,6 +1,6 @@
 import cv2 as cv
 
-THRESHOLD = 40
+THRESHOLD = 30
 RATIO = 2
 KERNEL_SIZE = 2
 
