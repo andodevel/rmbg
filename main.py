@@ -6,6 +6,7 @@ from libs.deeplabv3p.model import Deeplabv3
 from debug import *
 from config import get_logger
 from PIL import Image
+import canny
 
 logger = get_logger()
 
@@ -65,9 +66,13 @@ def iterate(file_path):
     labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
     labels = np.expand_dims(labels, -1)
     # Apply labels mask to the image
-    splashed_image = apply_image_mask(labels, image, image_gray)
+    image_splashed = apply_image_mask(labels, image, image_gray)
 
-    display_single_image(splashed_image)
+    # Apply labels mask to canny filtered image
+    image_canny = canny.apply(image, image_gray)
+    image_canny_splashed = apply_image_mask(labels, image_canny, image_gray)
+
+    display_two_images(image_splashed, image_canny_splashed)
 
 
 if __name__ == "__main__":
