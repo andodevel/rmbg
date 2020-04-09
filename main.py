@@ -65,10 +65,11 @@ def iterate(file_path):
         labels = labels[:, :-pad_y]
     labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
 
-    # Remove noise and expand neighbors. TODO: use opencvs
-    from scipy import ndimage
-    labels = ndimage.binary_erosion(labels, structure=np.ones((20, 20))).astype(labels.dtype)
-    labels = ndimage.binary_dilation(labels, structure=np.ones((20, 20))).astype(labels.dtype)
+    # Remove noise and expand neighbors.
+    # NOTE: Disable because it reduce details from main object, must find a better way
+    # from scipy import ndimage
+    # labels = ndimage.binary_erosion(labels, structure=np.ones((20, 20))).astype(labels.dtype)
+    # labels = ndimage.binary_dilation(labels, structure=np.ones((20, 20))).astype(labels.dtype)
 
     labels = np.expand_dims(labels, -1)
     # Apply labels mask to the image
@@ -120,8 +121,14 @@ def iterate(file_path):
     model.load_weights('crfrnn_keras_model.h5')
     img_data, img_h, img_w, size = crfasrnn_utils.get_preprocessed_image(image)
     probs = model.predict(img_data, verbose=False)[0]
-    image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size)
-    display_single_image(image_crfasrnn)
+    logger.info(f"prob {probs.shape}")
+    probs = probs.argmax(axis=2).astype('uint8')[:img_h, :img_w]
+    probs = np.array(Image.fromarray(probs.astype('uint8')).resize((h, w)))
+    # Remove noise and expand neighbors. TODO: use opencvs
+    probs = np.expand_dims(probs, -1)
+    # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size)
+    image_crf_splashed = apply_image_mask(probs, image, [0, 0, 0])
+    display_two_images(image_splashed, image_crf_splashed)
 
 
 if __name__ == "__main__":

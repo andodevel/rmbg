@@ -58,14 +58,14 @@ _PALETTE = [0, 0, 0,
 _IMAGENET_MEANS = np.array([123.68, 116.779, 103.939], dtype=np.float32)  # RGB mean values
 
 
-def get_preprocessed_image(file_name):
+def get_preprocessed_image(image):
     """ Reads an image from the disk, pre-processes it by subtracting mean etc. and
     returns a numpy array that's ready to be fed into a Keras model.
 
     Note: This method assumes 'channels_last' data format in Keras.
     """
 
-    image = Image.open(file_name)
+    image = Image.fromarray(image.astype('uint8'))
     original_size = image.size
     w, h = original_size
     ratio = min(500.0 / w, 500.0 / h)
