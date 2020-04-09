@@ -6,9 +6,9 @@ from libs.deeplabv3p.model import Deeplabv3
 from debug import *
 from config import get_logger
 from PIL import Image
-import canny
 
 logger = get_logger()
+
 
 def generate_renditions(image_org_):
     image_ = resize_image(image_org_, width=512)
@@ -72,32 +72,35 @@ def iterate(file_path):
 
     labels = np.expand_dims(labels, -1)
     # Apply labels mask to the image
-    image_splashed = apply_image_mask(labels, image, [0,0,0])
+    image_splashed = apply_image_mask(labels, image, [0, 0, 0])
 
-    # Apply labels mask to canny filtered image
-    image_canny = canny.apply(image, image_gray)
-    image_canny_splashed = apply_image_mask(labels, image_canny, image_gray)
-
+    # ----- section: canny -----
+    # import canny
+    # # Apply labels mask to canny filtered image
+    # image_canny = canny.apply(image, image_gray)
+    # image_canny_splashed = apply_image_mask(labels, image_canny, image_gray)
     # display_two_images(image_splashed, image_canny_splashed)
+    # ----- end section: canny -----
 
-    from skimage.filters import sobel
-    from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
-    from skimage.segmentation import mark_boundaries
-    from skimage.util import img_as_ubyte
+    # ------ section: superpixel ------
+    # from skimage.filters import sobel
+    # from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
+    # from skimage.segmentation import mark_boundaries
+    # from skimage.util import img_as_ubyte
 
-    img = image
-    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=30)
+    # img = image
+    # segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=30)
     # segments_slic = slic(img, n_segments=250, compactness=10, sigma=1)
     # segments_quick = quickshift(img, kernel_size=3, max_dist=6, ratio=0.5)
     # gradient = sobel(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY))
     # segments_watershed = watershed(gradient, markers=250, compactness=0.001)
 
-    print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
+    # print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
     # print(f"SLIC number of segments: {len(np.unique(segments_slic))}")
     # print(f"Quickshift number of segments: {len(np.unique(segments_quick))}")
     # print(f"Watershed number of segments: {len(np.unique(segments_watershed))}")
 
-    image_fz = img_as_ubyte(mark_boundaries(image_splashed, segments_fz))
+    # image_fz = img_as_ubyte(mark_boundaries(image_splashed, segments_fz))
     # image_fz = apply_image_mask(labels, image_fz, image_gray)
     # image_slic = img_as_ubyte(mark_boundaries(img, segments_slic))
     # image_slic = apply_image_mask(labels, image_slic, image_gray)
@@ -108,8 +111,17 @@ def iterate(file_path):
     # image_watershed = img_as_ubyte(mark_boundaries(img, segments_watershed))
     # image_watershed = apply_image_mask(labels, image_watershed, image_gray)
     # display_two_images(image_quick, image_watershed, 'Quickshift', 'Compact watershed')
+    # display_single_image(image_fz)
+    # ------ end section: superpixel ------
 
-    display_single_image(image_fz)
+    from libs.crfasrnn.crfrnn_model import get_crfrnn_model_def
+    import libs.crfasrnn.util as crfasrnn_utils
+    model = get_crfrnn_model_def()
+    model.load_weights('crfrnn_keras_model.h5')
+    img_data, img_h, img_w, size = crfasrnn_utils.get_preprocessed_image(image)
+    probs = model.predict(img_data, verbose=False)[0]
+    image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size)
+    display_single_image(image_crfasrnn)
 
 
 if __name__ == "__main__":
