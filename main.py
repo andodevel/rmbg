@@ -68,7 +68,7 @@ def iterate(file_path):
     # Remove noise and expand neighbors. TODO: use opencvs
     from scipy import ndimage
     labels = ndimage.binary_erosion(labels, structure=np.ones((20, 20))).astype(labels.dtype)
-    labels = ndimage.binary_dilation(labels, structure=np.ones((35, 35))).astype(labels.dtype)
+    labels = ndimage.binary_dilation(labels, structure=np.ones((20, 20))).astype(labels.dtype)
 
     labels = np.expand_dims(labels, -1)
     # Apply labels mask to the image
@@ -86,30 +86,30 @@ def iterate(file_path):
     from skimage.util import img_as_ubyte
 
     img = image
-    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-    segments_slic = slic(img, n_segments=250, compactness=10, sigma=1)
-    segments_quick = quickshift(img, kernel_size=3, max_dist=6, ratio=0.5)
-    gradient = sobel(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY))
-    segments_watershed = watershed(gradient, markers=250, compactness=0.001)
+    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=30)
+    # segments_slic = slic(img, n_segments=250, compactness=10, sigma=1)
+    # segments_quick = quickshift(img, kernel_size=3, max_dist=6, ratio=0.5)
+    # gradient = sobel(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY))
+    # segments_watershed = watershed(gradient, markers=250, compactness=0.001)
 
     print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
-    print(f"SLIC number of segments: {len(np.unique(segments_slic))}")
-    print(f"Quickshift number of segments: {len(np.unique(segments_quick))}")
-    print(f"Watershed number of segments: {len(np.unique(segments_watershed))}")
+    # print(f"SLIC number of segments: {len(np.unique(segments_slic))}")
+    # print(f"Quickshift number of segments: {len(np.unique(segments_quick))}")
+    # print(f"Watershed number of segments: {len(np.unique(segments_watershed))}")
 
-    image_fz = img_as_ubyte(mark_boundaries(img, segments_fz))
-    image_fz = apply_image_mask(labels, image_fz, image_gray)
-    image_slic = img_as_ubyte(mark_boundaries(img, segments_slic))
-    image_slic = apply_image_mask(labels, image_slic, image_gray)
+    image_fz = img_as_ubyte(mark_boundaries(image_splashed, segments_fz))
+    # image_fz = apply_image_mask(labels, image_fz, image_gray)
+    # image_slic = img_as_ubyte(mark_boundaries(img, segments_slic))
+    # image_slic = apply_image_mask(labels, image_slic, image_gray)
     # display_two_images(image_fz, image_slic, "Felzenszwalbs's method", "SLIC")
 
-    image_quick = img_as_ubyte(mark_boundaries(img, segments_quick))
-    image_quick = apply_image_mask(labels, image_quick, image_gray)
-    image_watershed = img_as_ubyte(mark_boundaries(img, segments_watershed))
-    image_watershed = apply_image_mask(labels, image_watershed, image_gray)
+    # image_quick = img_as_ubyte(mark_boundaries(img, segments_quick))
+    # image_quick = apply_image_mask(labels, image_quick, image_gray)
+    # image_watershed = img_as_ubyte(mark_boundaries(img, segments_watershed))
+    # image_watershed = apply_image_mask(labels, image_watershed, image_gray)
     # display_two_images(image_quick, image_watershed, 'Quickshift', 'Compact watershed')
 
-    logger.info(f"fz {segments_fz[:10]}")
+    display_single_image(image_fz)
 
 
 if __name__ == "__main__":
