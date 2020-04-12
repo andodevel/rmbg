@@ -125,17 +125,17 @@ def iterate(file_path):
     probs = np.array(Image.fromarray(probs.astype('uint8')).resize((h, w)))
     # Remove noise and expand neighbors. TODO: use opencvs
     probs = np.expand_dims(probs, -1)
-    # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size)
+    # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size);
     image_crf_splashed = apply_image_mask(probs, image, [0, 0, 0])
     # display_two_images(image_splashed, image_crf_splashed, "deeplabv3", "crfasrnn")
 
     # ----- start section: simple filer to remove smooth background ----
     # == Parameters =======================================================================
     BLUR = 21
-    CANNY_THRESH_1 = 10
+    CANNY_THRESH_1 = 5
     CANNY_THRESH_2 = 200
-    MASK_DILATE_ITER = 10
-    MASK_ERODE_ITER = 10
+    MASK_DILATE_ITER = 5
+    MASK_ERODE_ITER = 5
     MASK_COLOR = (0.0, 0.0, 0.0)  # In BGR format
 
     # == Processing =======================================================================
@@ -147,6 +147,7 @@ def iterate(file_path):
     edges = cv2.Canny(gray, CANNY_THRESH_1, CANNY_THRESH_2)
     edges = cv2.dilate(edges, None)
     edges = cv2.erode(edges, None)
+    display_single_image(edges, "canny")
 
     # -- Find contours in edges, sort by area ---------------------------------------------
     contour_info = []
