@@ -40,7 +40,9 @@ def iterate(file_path):
     probs = model.predict(img_data, verbose=False)[0]
     probs = probs.argmax(axis=2).astype('uint8')[:img_h, :img_w]
     probs = np.array(Image.fromarray(probs.astype('uint8')).resize((h, w)))
-    # Remove noise and expand neighbors. TODO: use opencvs
+    # Remove noise and expand neighbors.
+    probs = cv2.erode(probs, None, iterations=3)
+    probs = cv2.dilate(probs, None, iterations=5)
     probs = np.expand_dims(probs, -1)
     # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size);
     image_crf_splashed = apply_image_mask(probs, image, [0, 0, 0])
