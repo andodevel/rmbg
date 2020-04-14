@@ -42,7 +42,7 @@ def iterate(file_path):
     probs = np.array(Image.fromarray(probs.astype('uint8')).resize((h, w)))
     # Remove noise and expand a bit to the 'background'
     probs = cv2.erode(probs, None, iterations=3)
-    probs = cv2.dilate(probs, None, iterations=5)
+    probs = cv2.dilate(probs, None, iterations=3)
     probs = np.expand_dims(probs, -1)
     # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size);
     image_crf_splashed = apply_image_mask(probs, image, [0, 0, 0])
@@ -55,7 +55,7 @@ def iterate(file_path):
     from skimage.util import img_as_ubyte
 
     img = image
-    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=25)
+    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=15)
 
     # loop over the unique segment values
     for (i, segVal) in enumerate(np.unique(segments_fz)):
@@ -70,7 +70,7 @@ def iterate(file_path):
         mask = mask & np.squeeze(probs)
         sum_probs = mask.sum()
         # if sum_mask > sum_probs:
-        if sum_probs / sum_mask < 0.7:
+        if sum_probs / sum_mask < 0.6:
             # means current segment does not belong to foreground.
             probs[current_segment] = 0
 
@@ -81,7 +81,7 @@ def iterate(file_path):
 
     # image_fz = apply_image_mask(probs, image_fz, [0, 0, 0])
     image_final = apply_image_mask(probs, image, [0, 0, 0])
-    display_two_images(image, image_final)
+    display_two_images(image_crf_splashed, image_final)
 
 
 if __name__ == "__main__":
