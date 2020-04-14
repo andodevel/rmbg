@@ -56,7 +56,19 @@ def iterate(file_path):
 
     img = image
     segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=30)
+
+    # loop over the unique segment values
+    for (i, segVal) in enumerate(np.unique(segments_fz)):
+        # construct a mask for the segment
+        print
+        "[x] inspecting segment %d" % (i)
+        mask = np.zeros(image.shape[:2], dtype="uint8")
+        mask[segments_fz == segVal] = 255
+        # show the masked region
+        display_two_images(mask, cv2.bitwise_and(image, image, mask=mask))
+
     print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
+    print(f"segments_fz's shape {segments_fz.shape}")
     image_fz = img_as_ubyte(mark_boundaries(image_crf_splashed, segments_fz))
     # ------ end section: superpixel ------
 
