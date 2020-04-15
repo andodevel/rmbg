@@ -33,7 +33,7 @@ def optimize_labels_with_segments(image, labels, segments):
         mask = mask & np.squeeze(segmented_labels)
         sum_labels = mask.sum()
         # if sum_mask > sum_labels:
-        if sum_labels / sum_mask < 0.5:
+        if sum_labels / sum_mask < 0.4:
             # means current segment does not belong to foreground.
             segmented_labels[current_segment] = 0
 
@@ -63,28 +63,25 @@ def iterate(file_path):
     labels = model.predict(img_data, verbose=False)[0]
     labels = labels.argmax(axis=2).astype('uint8')[:img_h, :img_w]
     labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
-    # Remove small objects and expand a bit to the 'background'
-    labels = cv2.erode(labels, None, iterations=2)
-    labels = cv2.dilate(labels, None, iterations=3)
-    labels = np.expand_dims(labels, -1)
-    # image_crfasrnn = crfasrnn_utils.get_label_image(labels, img_h, img_w, size);
-    image_crf_splashed = apply_image_mask(labels, image, [0, 0, 0])
-    # display_two_images(image_splashed, image_crf_splashed, "deeplabv3", "crfasrnn")
+    image_crf_splashed = apply_image_mask(np.expand_dims(labels, -1), image, [0, 0, 0])
+    # Remove small objects
+    labels = cv2.erode(labels, None, iterations=5)
+    labels = cv2.dilate(labels, None, iterations=5)
     # ------ end section: crfasrnn ------
 
     # ------ start section: superpixel ------
-    from skimage.filters import sobel
     from skimage.segmentation import slic, quickshift
-
-    # segments_slic = slic(image, n_segments=250, compactness=10, sigma=1, convert2lab=True)
-    segments_quick = quickshift(image, kernel_size=2, max_dist=6, ratio=0.5, convert2lab=True)
+    # segments = slic(image, n_segments=200, compactness=10, sigma=1, convert2lab=True)
+    segments = quickshift(image, kernel_size=5, max_dist=6, ratio=0.5, convert2lab=True)
     # image_quick = img_as_ubyte(mark_boundaries(image, segments_quick))
     # image_quick = img_as_ubyte(mark_boundaries(image_crf_splashed, segments_quick))
     # image_quick = apply_image_mask(labels, image_quick, [0, 0, 0])
     # ------ end section: superpixel ------
 
-    edges = labels ^ np.expand_dims(cv2.erode(labels, None, iterations=12), -1)
-    image_quick_final = apply_image_mask(optimize_labels_with_segments(image, edges, segments_quick), image, [0, 0, 0])
+    # smooth mask
+    labels = optimize_labels_with_segments(image, labels, segments)
+    labels = np.expand_dims(labels, -1)
+    image_quick_final = apply_image_mask(labels, image, [0, 0, 0])
     display_two_images(image_crf_splashed, image_quick_final)
 
 
