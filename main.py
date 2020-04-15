@@ -5,6 +5,8 @@ from helpers import *
 from debug import *
 from config import get_logger
 from PIL import Image
+from libs.crfasrnn.crfrnn_model import get_crfrnn_model_def
+import libs.crfasrnn.util as crfasrnn_utils
 
 logger = get_logger()
 
@@ -54,11 +56,7 @@ def iterate(file_path):
     image, image_gray, image_lab = generate_renditions(image_org)
     w, h, _ = image.shape
 
-    # ------ start section: crfasrnn ------
-    from libs.crfasrnn.crfrnn_model import get_crfrnn_model_def
-    import libs.crfasrnn.util as crfasrnn_utils
-    model = get_crfrnn_model_def()
-    model.load_weights('crfrnn_keras_model.h5')
+    # ------ start section: semantic segmentation apply ------
     img_data, img_h, img_w, size = crfasrnn_utils.get_preprocessed_image(image)
     labels = model.predict(img_data, verbose=False)[0]
     labels = labels.argmax(axis=2).astype('uint8')[:img_h, :img_w]
@@ -66,11 +64,12 @@ def iterate(file_path):
     image_crf_splashed = apply_image_mask(np.expand_dims(labels, -1), image, [0, 0, 0])
     # Remove small objects
     labels = cv2.erode(labels, None, iterations=5)
-    labels = cv2.dilate(labels, None, iterations=5)
-    # ------ end section: crfasrnn ------
+    labels = cv2.dilate(labels, None, iterations=7)
+    # ------ end section: semantic segmentation apply ------
 
     # ------ start section: superpixel ------
-    from skimage.segmentation import slic, quickshift
+    from skimage.segmentation import quickshift
+    # from skimage.segmentation import slic
     # segments = slic(image, n_segments=200, compactness=10, sigma=1, convert2lab=True)
     segments = quickshift(image, kernel_size=5, max_dist=6, ratio=0.5, convert2lab=True)
     # image_quick = img_as_ubyte(mark_boundaries(image, segments_quick))
@@ -103,6 +102,11 @@ if __name__ == "__main__":
     input_path = args.input
     logger.info("start time")
     logger.info(f"Run tool on '{input_path}'")
+
+    # load model once
+    model = get_crfrnn_model_def()
+    model.load_weights('crfrnn_keras_model.h5')
+
     if os.path.isfile(input_path):
         iterate(input_path)
     elif os.path.isdir(input_path):
