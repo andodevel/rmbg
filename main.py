@@ -17,6 +17,28 @@ def generate_renditions(image_org_):
     return image_, image_gray_, image_lab_
 
 
+def optimize_labels_with_segments(image, labels, segments):
+    segmented_labels = np.copy(labels)
+
+    # loop over the unique segment values
+    for (i, segVal) in enumerate(np.unique(segments)):
+        # construct a mask for the segment
+        mask = np.zeros(image.shape[:2], dtype="uint8")
+        current_segment = segments == segVal
+        mask[current_segment] = 1
+        sum_mask = mask.sum()
+        # mask[segments == segVal] = 255
+        # show the masked region
+        # display_two_images(mask, cv2.bitwise_and(image, image, mask=mask))
+        mask = mask & np.squeeze(segmented_labels)
+        sum_labels = mask.sum()
+        # if sum_mask > sum_labels:
+        if sum_labels / sum_mask < 0.6:
+            # means current segment does not belong to foreground.
+            segmented_labels[current_segment] = 0
+
+    return segmented_labels
+
 def iterate(file_path):
     if not is_image_file(file_path):
         logger.error(f"'{file_path}' is not a valid image file!")
@@ -37,52 +59,41 @@ def iterate(file_path):
     model = get_crfrnn_model_def()
     model.load_weights('crfrnn_keras_model.h5')
     img_data, img_h, img_w, size = crfasrnn_utils.get_preprocessed_image(image)
-    probs = model.predict(img_data, verbose=False)[0]
-    probs = probs.argmax(axis=2).astype('uint8')[:img_h, :img_w]
-    probs = np.array(Image.fromarray(probs.astype('uint8')).resize((h, w)))
+    labels = model.predict(img_data, verbose=False)[0]
+    labels = labels.argmax(axis=2).astype('uint8')[:img_h, :img_w]
+    labels = np.array(Image.fromarray(labels.astype('uint8')).resize((h, w)))
     # Remove noise and expand a bit to the 'background'
-    probs = cv2.erode(probs, None, iterations=3)
-    probs = cv2.dilate(probs, None, iterations=3)
-    probs = np.expand_dims(probs, -1)
-    # image_crfasrnn = crfasrnn_utils.get_label_image(probs, img_h, img_w, size);
-    image_crf_splashed = apply_image_mask(probs, image, [0, 0, 0])
+    labels = cv2.erode(labels, None, iterations=3)
+    labels = cv2.dilate(labels, None, iterations=3)
+    labels = np.expand_dims(labels, -1)
+    # image_crfasrnn = crfasrnn_utils.get_label_image(labels, img_h, img_w, size);
+    image_crf_splashed = apply_image_mask(labels, image, [0, 0, 0])
     # display_two_images(image_splashed, image_crf_splashed, "deeplabv3", "crfasrnn")
     # ------ end section: crfasrnn ------
 
     # ------ start section: superpixel ------
-    from skimage.segmentation import felzenszwalb
-    from skimage.segmentation import mark_boundaries
-    from skimage.util import img_as_ubyte
+    from skimage.filters import sobel
+    from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
 
-    img = image
-    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=15)
-
-    # loop over the unique segment values
-    for (i, segVal) in enumerate(np.unique(segments_fz)):
-        # construct a mask for the segment
-        mask = np.zeros(image.shape[:2], dtype="uint8")
-        current_segment = segments_fz == segVal
-        mask[current_segment] = 1
-        sum_mask = mask.sum()
-        # mask[segments_fz == segVal] = 255
-        # show the masked region
-        # display_two_images(mask, cv2.bitwise_and(image, image, mask=mask))
-        mask = mask & np.squeeze(probs)
-        sum_probs = mask.sum()
-        # if sum_mask > sum_probs:
-        if sum_probs / sum_mask < 0.6:
-            # means current segment does not belong to foreground.
-            probs[current_segment] = 0
+    segments_fz = felzenszwalb(image, scale=100, sigma=0.5, min_size=20)
+    segments_slic = slic(image, n_segments=250, compactness=10, sigma=1)
+    segments_quick = quickshift(image, kernel_size=3, max_dist=6, ratio=0.5)
+    gradient = sobel(cv2.cvtColor(image, cv2.COLOR_RGB2GRAY))
+    segments_watershed = watershed(gradient, markers=250, compactness=0.001)
 
     # print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
     # print(f"segments_fz's shape {segments_fz.shape}")
     # image_fz = img_as_ubyte(mark_boundaries(image_crf_splashed, segments_fz))
     # ------ end section: superpixel ------
 
-    # image_fz = apply_image_mask(probs, image_fz, [0, 0, 0])
-    image_final = apply_image_mask(probs, image, [0, 0, 0])
-    display_two_images(image_crf_splashed, image_final)
+    # image_fz = apply_image_mask(labels, image_fz, [0, 0, 0])
 
+    image_fz_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_fz), image, [0, 0, 0])
+    image_slic_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_slic), image, [0, 0, 0])
+    image_quick_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_quick), image, [0, 0, 0])
+    image_watershed_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_watershed), image, [0, 0, 0])
+    display_four_images(image_fz_final, image_slic_final, image_quick_final, image_watershed_final,
+                        "fz", "slic", "quick", "watershed")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='rmbg v0.1')
