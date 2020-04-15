@@ -39,6 +39,7 @@ def optimize_labels_with_segments(image, labels, segments):
 
     return segmented_labels
 
+
 def iterate(file_path):
     if not is_image_file(file_path):
         logger.error(f"'{file_path}' is not a valid image file!")
@@ -73,27 +74,19 @@ def iterate(file_path):
 
     # ------ start section: superpixel ------
     from skimage.filters import sobel
-    from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
+    from skimage.segmentation import slic, quickshift
 
-    segments_fz = felzenszwalb(image, scale=100, sigma=0.5, min_size=20)
-    segments_slic = slic(image, n_segments=250, compactness=10, sigma=1, convert2lab=True)
+    # segments_slic = slic(image, n_segments=250, compactness=10, sigma=1, convert2lab=True)
     segments_quick = quickshift(image, kernel_size=2, max_dist=6, ratio=0.5, convert2lab=True)
-    gradient = sobel(cv2.cvtColor(image, cv2.COLOR_RGB2GRAY))
-    segments_watershed = watershed(gradient, markers=250, compactness=0.001)
-
-    # print(f"Felzenszwalb number of segments: {len(np.unique(segments_fz))}")
-    # print(f"segments_fz's shape {segments_fz.shape}")
-    # image_fz = img_as_ubyte(mark_boundaries(image_crf_splashed, segments_fz))
+    # image_quick = img_as_ubyte(mark_boundaries(image, segments_quick))
+    # image_quick = img_as_ubyte(mark_boundaries(image_crf_splashed, segments_quick))
+    # image_quick = apply_image_mask(labels, image_quick, [0, 0, 0])
     # ------ end section: superpixel ------
 
-    # image_fz = apply_image_mask(labels, image_fz, [0, 0, 0])
+    edges = labels ^ np.expand_dims(cv2.erode(labels, None, iterations=12), -1)
+    image_quick_final = apply_image_mask(optimize_labels_with_segments(image, edges, segments_quick), image, [0, 0, 0])
+    display_two_images(image_crf_splashed, image_quick_final)
 
-    image_fz_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_fz), image, [0, 0, 0])
-    image_slic_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_slic), image, [0, 0, 0])
-    image_quick_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_quick), image, [0, 0, 0])
-    image_watershed_final = apply_image_mask(optimize_labels_with_segments(image, labels, segments_watershed), image, [0, 0, 0])
-    display_four_images(image_fz_final, image_slic_final, image_quick_final, image_watershed_final,
-                        "fz", "slic", "quick", "watershed")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='rmbg v0.1')
