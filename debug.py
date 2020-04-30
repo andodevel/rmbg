@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 
 import config as cfg
 
-if os.name == "nt":
-    matplotlib.use("TKAgg")
+matplotlib.use("TKAgg")
 
 
 # event listener
