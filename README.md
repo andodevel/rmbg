@@ -3,15 +3,11 @@
 Simply its REMOVE BACKGROUND using AI  
 
 ## Prerequresites
-1. virtual env  
-2. python3, pip  
+1. conda  
 
 ## Run
-```virtualenv --system-site-packages -p python3 ./venv```  
+```conda env create --file conda.yml```  
 
-```source ./venv/bin/activate```  
+```conda activate rmbg```  
 
-```pip install -R requirements.txt```  
-
-```python start main.py```  
-
+```python main.py --debug --cpu data/test/``

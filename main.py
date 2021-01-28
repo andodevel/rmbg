@@ -80,7 +80,7 @@ def iterate(file_path):
     labels = optimize_labels_with_segments(image, labels, segments)
     labels = np.expand_dims(labels, -1)
     image_quick_final = apply_image_mask(labels, image, [0, 0, 0])
-    display_two_images(image_crf_splashed, image_quick_final, "AI", "AI + superpixel")
+    display_two_images(image, image_quick_final, "IN", "OUT")
 
 
 if __name__ == "__main__":

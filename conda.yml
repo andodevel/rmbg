@@ -79,5 +79,5 @@ dependencies:
     - werkzeug==1.0.1
     - wrapt==1.12.1
     - zipp==3.1.0
-prefix: /home/andodevel/.conda/envs/rmbg
+prefix: ~/.conda/envs/rmbg
 
