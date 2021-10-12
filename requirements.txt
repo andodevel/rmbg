@@ -4,7 +4,7 @@ numpy==1.18.1
 tensorflow==2.1.0
 keras==2.3.1
 utils==1.0.0
-opencv-python==4.1.2.30
+opencv-python==4.2.0.32
 opencv-contrib-python==4.2.0.32
 imgaug==0.3.0
 Pillow>=6.2.2
